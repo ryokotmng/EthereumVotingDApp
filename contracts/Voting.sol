@@ -8,7 +8,7 @@ contract Voting {
   bytes32[] public candidateList;
   mapping (bytes32 => uint8) public votesReceived;
 
-  constructor(bytes32[] candidateNames) public {
+  constructor(bytes32[] memory candidateNames) public {
     candidateList = candidateNames;
   }
 
