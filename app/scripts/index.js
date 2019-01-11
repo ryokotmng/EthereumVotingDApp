@@ -6,23 +6,23 @@ import { default as Web3 } from 'web3'
 import { default as contract } from 'truffle-contract'
 
 // Import our contract artifacts and turn them into usable abstractions.
-import metaCoinArtifact from '../../build/contracts/MetaCoin.json'
+import VotingArtifact from '../../build/contracts/Voting.json'
 
 // MetaCoin is our usable abstraction, which we'll use through the code below.
-const MetaCoin = contract(metaCoinArtifact)
+const Voting = contract(VotingArtifact)
 
 // The following code is simple to show off interacting with your contracts.
 // As your needs grow you will likely need to change its form and structure.
 // For application bootstrapping, check out window.addEventListener below.
 let accounts
 let account
+let candidates = {"Rama": "candidate-1", "Nick": "candidate-2", "Jose": "candidate-3"};
 
 const App = {
   start: function () {
     const self = this
 
-    // Bootstrap the MetaCoin abstraction for Use.
-    MetaCoin.setProvider(web3.currentProvider)
+    Voting.setProvider(web3.currentProvider)
 
     // Get the initial account balance so it can be displayed.
     web3.eth.getAccounts(function (err, accs) {
@@ -39,8 +39,21 @@ const App = {
       accounts = accs
       account = accounts[0]
 
-      self.refreshBalance()
+      self.loadCandidateAndVotes()
     })
+  },
+
+  loadCandidateAndVotes: function() {
+    var candidateNames = object.keys(candidates);
+
+    for(var i=0; i<candidateNames.length; i++) {
+      let name = candidateNames[i]
+      Voting.deployed().then(function(f) {
+        f.totalVotesFor.call(name).then(function(f) {
+          $("#" + candidates[name]).html(f.toNumber())
+        })
+      })
+    }
   },
 
   setStatus: function (message) {
@@ -52,7 +65,7 @@ const App = {
     const self = this
 
     let meta
-    MetaCoin.deployed().then(function (instance) {
+    Voting.deployed().then(function (instance) {
       meta = instance
       return meta.getBalance.call(account, { from: account })
     }).then(function (value) {
@@ -64,26 +77,6 @@ const App = {
     })
   },
 
-  sendCoin: function () {
-    const self = this
-
-    const amount = parseInt(document.getElementById('amount').value)
-    const receiver = document.getElementById('receiver').value
-
-    this.setStatus('Initiating transaction... (please wait)')
-
-    let meta
-    MetaCoin.deployed().then(function (instance) {
-      meta = instance
-      return meta.sendCoin(receiver, amount, { from: account })
-    }).then(function () {
-      self.setStatus('Transaction complete!')
-      self.refreshBalance()
-    }).catch(function (e) {
-      console.log(e)
-      self.setStatus('Error sending coin; see log.')
-    })
-  }
 }
 
 window.App = App
@@ -103,13 +96,13 @@ window.addEventListener('load', function () {
     window.web3 = new Web3(web3.currentProvider)
   } else {
     console.warn(
-      'No web3 detected. Falling back to http://127.0.0.1:9545.' +
+      'No web3 detected. Falling back to http://127.0.0.1:8545.' +
       ' You should remove this fallback when you deploy live, as it\'s inherently insecure.' +
       ' Consider switching to Metamask for development.' +
       ' More info here: http://truffleframework.com/tutorials/truffle-and-metamask'
     )
     // fallback - use your fallback strategy (local node / hosted node + in-dapp id mgmt / fail)
-    window.web3 = new Web3(new Web3.providers.HttpProvider('http://127.0.0.1:9545'))
+    window.web3 = new Web3(new Web3.providers.HttpProvider('http://127.0.0.1:8545'))
   }
 
   App.start()
